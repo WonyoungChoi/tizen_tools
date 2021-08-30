@@ -68,22 +68,16 @@ RUN ${SYSROOT_PATH}/build-rootfs.py --arch arm64
 RUN ${SYSROOT_PATH}/build-rootfs.py --arch x86
 
 
-###################################
-### Image for build environment ###
-###################################
+#############################
+### Image for tizen-tools ###
+#############################
 
 FROM debian:buster-slim
 
 # Install packages for engine build.
 RUN apt-get update && \
-    apt-get install -y git xz-utils curl ca-certificates pkg-config \
-                       python libncurses5 libfreetype6-dev && \
+    apt-get install -y git curl ca-certificates python && \
     apt-get clean
 
 # Copy tizen_tools from the previous stage.
 COPY --from=builder /home/user/tizen_tools/  /tizen_tools/
-
-# Install depot_tools.
-ENV DEPOT_TOOLS_PATH=/usr/share/depot_tools
-RUN git clone --depth=1 https://chromium.googlesource.com/chromium/tools/depot_tools.git ${DEPOT_TOOLS_PATH}
-ENV PATH=$PATH:${DEPOT_TOOLS_PATH}
