@@ -2,12 +2,12 @@
 ### Stage for toolchains and sysroot ###
 ########################################
 
-FROM debian:buster-slim AS builder
+FROM ubuntu:20.04 AS builder
 
 ENV DEBIAN_FRONTEND=noninteractive
 
 RUN apt-get update
-RUN apt-get install -y git curl python3 rpm2cpio cpio
+RUN apt-get install -y git curl rpm2cpio cpio zip pciutils libncurses5 libpython2.7 python2.7 python3
 RUN apt-get clean
 
 # Only non-root users can install Tizen Studio.
@@ -35,18 +35,18 @@ RUN mkdir -p ${SYSROOT_PATH}
 
 # Copy toolchains.
 SHELL ["/bin/bash", "-c"]
-RUN cp -fr ${TIZEN_STUDIO}/tools/llvm-10/* ${TOOLCHAINS_PATH}
+RUN mkdir -p ${TOOLCHAINS_PATH}/bin
 RUN for f in ${TIZEN_STUDIO}/tools/arm-linux-gnueabi-gcc-9.2/bin/arm-linux-*; do \
-        b=$(basename $f); \
-        cp $f ${TOOLCHAINS_PATH}/bin/armv7l-tizen-${b:4}; \
+    b=$(basename $f); \
+    cp $f ${TOOLCHAINS_PATH}/bin/armv7l-tizen-${b:4}; \
     done
 RUN for f in ${TIZEN_STUDIO}/tools/aarch64-linux-gnu-gcc-9.2/bin/aarch64-linux-*; do \
-        b=$(basename $f); \
-        cp $f ${TOOLCHAINS_PATH}/bin/aarch64-tizen-${b:8}; \
+    b=$(basename $f); \
+    cp $f ${TOOLCHAINS_PATH}/bin/aarch64-tizen-${b:8}; \
     done
 RUN for f in ${TIZEN_STUDIO}/tools/i586-linux-gnueabi-gcc-9.2/bin/i586-linux-*; do \
-        b=$(basename $f); \
-        cp $f ${TOOLCHAINS_PATH}/bin/i586-tizen-${b:5}; \
+    b=$(basename $f); \
+    cp $f ${TOOLCHAINS_PATH}/bin/i586-tizen-${b:5}; \
     done
 
 # FIXME: https://github.com/flutter-tizen/tizen_tools/pull/7#discussion_r611339789
@@ -72,7 +72,9 @@ RUN ${SYSROOT_PATH}/build-rootfs.py --arch x86
 ### Image for tizen-tools ###
 #############################
 
-FROM debian:buster-slim
+FROM ubuntu:20.04
+
+ENV DEBIAN_FRONTEND=noninteractive
 
 # Install packages for engine build.
 RUN apt-get update && \
@@ -80,4 +82,6 @@ RUN apt-get update && \
     apt-get clean
 
 # Copy tizen_tools from the previous stage.
-COPY --from=builder /home/user/tizen_tools/  /tizen_tools/
+COPY --from=builder /home/user/tizen-studio/tools/llvm-10/  /tizen_tools/toolchains/
+COPY --from=builder /home/user/tizen_tools/toolchains/  /tizen_tools/toolchains/
+COPY --from=builder /home/user/tizen_tools/sysroot/  /tizen_tools/sysroot/
